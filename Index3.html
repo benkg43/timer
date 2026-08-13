@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>BKG Red LCD Interval Timer</title>
+<style>:root {
+  color-scheme: light dark;
+  background-color: transparent !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --main-surface-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: light-dark(rgb(26 28 31), rgb(255 255 255));
+  --card: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --card-foreground: var(--foreground);
+  --popover: light-dark(rgb(255 255 255), rgb(45 45 45));
+  --popover-foreground: var(--foreground);
+  --primary: light-dark(rgb(51 156 255), rgb(131 195 255));
+  --primary-foreground: light-dark(rgb(255 255 255), rgb(13 13 13));
+  --secondary: light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%));
+  --secondary-foreground: var(--foreground);
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: light-dark(
+    rgb(26 28 31 / 49.4%),
+    rgb(255 255 255 / 49.8%)
+  );
+  --accent: light-dark(rgb(229 242 255), rgb(13 39 63));
+  --accent-foreground: var(--primary);
+  --destructive: light-dark(rgb(226 85 7), rgb(255 133 73));
+  --border: light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%));
+  --input: light-dark(
+    rgb(26 28 31 / 11.8%),
+    color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+  );
+  --ring: light-dark(rgb(51 156 255), rgb(131 195 255 / 76%));
+  --font-size-base: 14px;
+  --red: light-dark(rgb(186 38 35), rgb(250 66 62));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: 10px;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+  --color-background-primary: var(--background);
+  --color-text-primary: var(--foreground);
+  --color-border-secondary: var(--border);
+}
+
+:root[data-visualize-standalone] {
+  background-color: var(--background) !important;
+}
+
+/* Generic mobile code-block hosts provide light/dark mode but no series palette.
+   AppBlock hosts set all six variables themselves. */
+:root:not([data-app-block-surface]) {
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(#f3883b, #f59a56);
+  --viz-series-3: light-dark(#5dc977, #74d58b);
+  --viz-series-4: light-dark(#eb77b1, #f08fc0);
+  --viz-series-5: light-dark(#9b79ec, #aa91ef);
+  --viz-series-6: light-dark(#3ab9b1, #5acbc2);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+:root:not([data-app-block-surface]) > body {
+  padding: 12px;
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The bundled tooltip runtime owns [data-tooltip]. AppBlock's CSS-only
+   pseudo-tooltip can widen dense grids even while hidden. */
+main [data-tooltip]::after {
+  content: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--interactive-label-primary-default, var(--primary-foreground));
+  background: var(--interactive-bg-primary-default, var(--foreground));
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(
+    in srgb,
+    var(--interactive-label-primary-default, var(--primary-foreground)) 50%,
+    transparent
+  );
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed="true"],
+    [aria-selected="true"],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+</style>
+</head>
+<body>
+<div id="casio-interval-stopwatch" aria-label="Customizable interval stopwatch">
+  <style>
+    @font-face {
+      font-family: "DSEG7";
+      src: url("data:font/woff2;base64,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") format("woff2");
+      font-display: swap;
+    }
+    #casio-interval-stopwatch {
+      --resin: #3f4542;
+      --resin-edge: #555c58;
+      --case-ink: #050806;
+      --lcd: #55f59a;
+      --lcd-bright: #8affbd;
+      --lcd-ink: #06180d;
+      max-width: 736px;
+      margin: 0 auto;
+      color: var(--foreground);
+    }
+    #casio-interval-stopwatch .watch-shell {
+      background: linear-gradient(145deg, var(--resin-edge), var(--resin));
+      color: var(--case-ink);
+      border: 3px solid color-mix(in srgb, var(--foreground) 76%, var(--border));
+      border-radius: 8px 8px 20px 20px;
+      padding: clamp(14px, 3vw, 24px);
+      box-shadow: inset 0 2px 0 color-mix(in srgb, var(--card) 16%, transparent), 0 8px 22px color-mix(in srgb, var(--foreground) 22%, transparent);
+    }
+    #casio-interval-stopwatch .brand-row,
+    #casio-interval-stopwatch .lcd-top,
+    #casio-interval-stopwatch .sequence {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    #casio-interval-stopwatch .brand {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 500;
+      letter-spacing: .14em;
+    }
+    #casio-interval-stopwatch .model {
+      color: var(--case-ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .08em;
+    }
+    #casio-interval-stopwatch .lcd {
+      margin: 12px 0 16px;
+      padding: clamp(12px, 3vw, 22px);
+      border: 7px double color-mix(in srgb, var(--card) 34%, var(--foreground));
+      border-radius: 4px;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, rgb(6 24 13 / 5%) 3px 4px),
+        radial-gradient(circle at 50% 42%, var(--lcd-bright), var(--lcd) 64%, #35d978 100%);
+      color: var(--lcd-ink);
+      box-shadow: inset 0 3px 13px rgb(6 24 13 / 25%), 0 0 32px rgb(85 245 154 / 72%);
+    }
+    #casio-interval-stopwatch .mode,
+    #casio-interval-stopwatch .phase-count {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    #casio-interval-stopwatch .time {
+      padding: .04em 0;
+      text-align: center;
+      font-family: "DSEG7", Impact, "Arial Narrow", ui-monospace, monospace;
+      font-size: clamp(82px, 23vw, 168px);
+      font-weight: 500;
+      line-height: .92;
+      letter-spacing: -.09em;
+      font-variant-numeric: tabular-nums;
+      transform: skewX(-3deg) scaleX(.88);
+      text-shadow: 1px 1px 0 rgb(6 24 13 / 18%);
+    }
+    #casio-interval-stopwatch .unit {
+      text-align: right;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .12em;
+    }
+    #casio-interval-stopwatch .sequence {
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--case-ink);
+    }
+    #casio-interval-stopwatch .sequence span {
+      padding: 3px 7px;
+      border-bottom: 2px solid transparent;
+    }
+    #casio-interval-stopwatch .sequence .active {
+      color: var(--case-ink);
+      border-bottom-color: var(--case-ink);
+    }
+    #casio-interval-stopwatch .controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+    }
+    #casio-interval-stopwatch .sound-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+      color: var(--case-ink);
+    }
+    #casio-interval-stopwatch .controls .btn {
+      min-height: 48px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .08em;
+    }
+    #casio-interval-stopwatch .customizer {
+      margin-top: 16px;
+    }
+    #casio-interval-stopwatch .customizer summary {
+      cursor: pointer;
+      color: var(--case-ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 500;
+      letter-spacing: .06em;
+    }
+    #casio-interval-stopwatch .phase-editor {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    #casio-interval-stopwatch .phase-row {
+      display: grid;
+      grid-template-columns: minmax(110px, 1.5fr) minmax(80px, 1fr) auto;
+      align-items: end;
+      gap: 8px;
+    }
+    #casio-interval-stopwatch .phase-row .form-label {
+      margin: 0;
+    }
+    #casio-interval-stopwatch .editor-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 420px) {
+      #casio-interval-stopwatch .time { font-size: clamp(72px, 28vw, 116px); }
+      #casio-interval-stopwatch .brand-row { align-items: flex-start; }
+      #casio-interval-stopwatch .model { text-align: right; }
+      #casio-interval-stopwatch .phase-row { grid-template-columns: 1fr 1fr auto; }
+    }
+    html,
+    body {
+      width: 100%;
+      min-width: 320px;
+      min-height: 100%;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    #casio-interval-stopwatch {
+      width: 100%;
+      max-width: none;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+    }
+    #casio-interval-stopwatch .watch-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      border-radius: 0;
+      padding: clamp(14px, 2.4vmin, 48px);
+    }
+    #casio-interval-stopwatch .lcd {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: clamp(220px, 48vh, 680px);
+      margin-block: clamp(10px, 2vmin, 28px);
+      padding: clamp(14px, 3vmin, 52px);
+    }
+    #casio-interval-stopwatch .time {
+      display: flex;
+      flex: 1 1 auto;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(96px, 27vmin, 440px);
+    }
+    #casio-interval-stopwatch .brand,
+    #casio-interval-stopwatch .model,
+    #casio-interval-stopwatch .mode,
+    #casio-interval-stopwatch .phase-count,
+    #casio-interval-stopwatch .unit,
+    #casio-interval-stopwatch .sequence,
+    #casio-interval-stopwatch .sound-row,
+    #casio-interval-stopwatch .customizer summary {
+      font-size: clamp(12px, 1.25vmin, 22px);
+    }
+    #casio-interval-stopwatch .controls .btn {
+      min-height: clamp(48px, 7vh, 92px);
+      font-size: clamp(14px, 1.7vmin, 26px);
+    }
+    @media (max-aspect-ratio: 3 / 4) {
+      #casio-interval-stopwatch .time { font-size: clamp(88px, 34vw, 260px); }
+      #casio-interval-stopwatch .lcd { min-height: 42vh; }
+    }
+    #casio-interval-stopwatch {
+      --retro-cyan: #27e6e6;
+      --retro-violet: #8f65ff;
+      --retro-blue: #286bcf;
+    }
+    #casio-interval-stopwatch .watch-shell {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, transparent 0 49.7%, rgb(39 230 230 / 10%) 49.7% 50.3%, transparent 50.3%),
+        linear-gradient(0deg, transparent 0 49.7%, rgb(143 101 255 / 8%) 49.7% 50.3%, transparent 50.3%),
+        linear-gradient(145deg, #5b625e, #393e3b 56%, #505652);
+      background-size: 72px 72px, 72px 72px, auto;
+    }
+    #casio-interval-stopwatch .watch-shell::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(115deg, transparent 0 8%, rgb(39 230 230 / 26%) 8% 8.45%, transparent 8.45% 10%, rgb(143 101 255 / 20%) 10% 10.55%, transparent 10.55% 90%, rgb(39 230 230 / 22%) 90% 90.45%, transparent 90.45% 92%, rgb(143 101 255 / 18%) 92% 92.55%, transparent 92.55%),
+        repeating-linear-gradient(0deg, rgb(5 8 6 / 3%) 0 1px, transparent 1px 4px);
+    }
+    #casio-interval-stopwatch .watch-shell > * {
+      position: relative;
+      z-index: 1;
+    }
+    #casio-interval-stopwatch .brand-row {
+      padding-block: clamp(4px, .8vmin, 12px);
+      border-top: 3px solid var(--retro-cyan);
+      border-bottom: 3px solid var(--retro-violet);
+      box-shadow: 0 -2px 12px rgb(39 230 230 / 35%), 0 2px 12px rgb(143 101 255 / 30%);
+      text-transform: uppercase;
+    }
+    #casio-interval-stopwatch .brand {
+      font-style: italic;
+      text-shadow: 2px 2px 0 rgb(39 230 230 / 35%);
+    }
+    #casio-interval-stopwatch .lcd {
+      position: relative;
+      border-color: #1a201d;
+      outline: 2px solid var(--retro-cyan);
+      outline-offset: 4px;
+      box-shadow:
+        inset 0 3px 13px rgb(6 24 13 / 25%),
+        0 0 32px rgb(85 245 154 / 72%),
+        0 0 0 7px #262b28,
+        0 0 0 9px var(--retro-violet);
+    }
+    #casio-interval-stopwatch .lcd::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(105deg, transparent 0 38%, rgb(255 255 255 / 12%) 44%, transparent 50%);
+      transform: translateX(-120%);
+      animation: retro-lcd-sweep 9s ease-in-out infinite;
+    }
+    #casio-interval-stopwatch .sequence {
+      padding: 8px 10px;
+      background: rgb(85 92 88 / 72%);
+      border-left: 4px solid var(--retro-cyan);
+      border-right: 4px solid var(--retro-violet);
+    }
+    #casio-interval-stopwatch .sequence .active {
+      background: #050806;
+      color: #7affb0;
+      border-bottom-color: #7affb0;
+      box-shadow: 0 0 12px rgb(85 245 154 / 55%);
+    }
+    #casio-interval-stopwatch .sound-row,
+    #casio-interval-stopwatch .customizer {
+      padding-inline: 8px;
+      border-left: 3px solid var(--retro-cyan);
+    }
+    #casio-interval-stopwatch .controls {
+      padding: 5px;
+      border-bottom: 4px solid var(--retro-violet);
+      box-shadow: 0 5px 14px rgb(143 101 255 / 22%);
+    }
+    @keyframes retro-lcd-sweep {
+      0%, 70%, 100% { transform: translateX(-120%); }
+      82% { transform: translateX(120%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #casio-interval-stopwatch .lcd::after { animation: none; }
+    }
+
+    /* Red 1980s appliance-display theme, based on Ben's reference. */
+    #casio-interval-stopwatch {
+      --resin: #111311;
+      --resin-edge: #343733;
+      --case-ink: #050505;
+      --lcd: #ff163b;
+      --lcd-bright: #ff3552;
+      --lcd-ink: #090307;
+      --retro-cyan: #ff183d;
+      --retro-violet: #080808;
+    }
+    #casio-interval-stopwatch .watch-shell {
+      background:
+        repeating-linear-gradient(0deg, rgb(255 255 255 / 1.5%) 0 1px, transparent 1px 5px),
+        linear-gradient(145deg, #4b4e49 0%, #242724 18%, #0c0e0c 66%, #252825 100%);
+      border-color: #070807;
+      box-shadow: inset 0 2px 0 rgb(255 255 255 / 18%), inset 0 -5px 14px rgb(0 0 0 / 70%);
+    }
+    #casio-interval-stopwatch .watch-shell::before {
+      background:
+        linear-gradient(90deg, rgb(255 255 255 / 5%), transparent 6% 94%, rgb(0 0 0 / 30%)),
+        repeating-linear-gradient(0deg, rgb(255 255 255 / 1.5%) 0 1px, transparent 1px 4px);
+    }
+    #casio-interval-stopwatch .brand-row {
+      padding: clamp(7px, 1vmin, 14px) clamp(10px, 1.5vmin, 24px);
+      color: #d9d9d2;
+      background: #080908;
+      border: 0;
+      border-top: 2px solid #5f625c;
+      border-bottom: 3px solid #020302;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%);
+    }
+    #casio-interval-stopwatch .brand,
+    #casio-interval-stopwatch .model {
+      color: #d9d9d2;
+      font-style: normal;
+      text-shadow: none;
+    }
+    #casio-interval-stopwatch .lcd {
+      border: clamp(8px, 1.25vmin, 18px) solid #070807;
+      outline: 3px solid #656962;
+      outline-offset: 1px;
+      border-radius: 1px;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, rgb(20 0 5 / 5%) 3px 4px),
+        radial-gradient(ellipse at 50% 46%, #ff3854 0%, #ff1439 62%, #d9082b 100%);
+      color: var(--lcd-ink);
+      box-shadow:
+        inset 0 3px 10px rgb(75 0 15 / 42%),
+        inset 0 -2px 0 rgb(255 120 140 / 35%),
+        0 0 22px rgb(255 18 57 / 58%),
+        0 0 0 7px #151715;
+    }
+    #casio-interval-stopwatch .lcd::before {
+      content: "";
+      position: absolute;
+      z-index: 2;
+      top: clamp(42px, 7.5vmin, 88px);
+      left: clamp(16px, 3vmin, 52px);
+      right: clamp(16px, 3vmin, 52px);
+      height: 2px;
+      pointer-events: none;
+      background: #130208;
+      box-shadow: 0 1px 0 rgb(255 120 140 / 28%);
+    }
+    #casio-interval-stopwatch .lcd::after {
+      animation: none;
+      background: linear-gradient(105deg, transparent 0 42%, rgb(255 255 255 / 7%) 48%, transparent 54%);
+      transform: none;
+    }
+    #casio-interval-stopwatch .lcd-top,
+    #casio-interval-stopwatch .unit {
+      position: relative;
+      z-index: 3;
+      color: #0b0205;
+      font-weight: 700;
+    }
+    #casio-interval-stopwatch .time {
+      position: relative;
+      z-index: 3;
+      color: #080104;
+      text-shadow: 1px 1px 0 rgb(255 105 126 / 24%);
+    }
+    #casio-interval-stopwatch .sequence {
+      padding: 9px 12px;
+      color: #e7e7df;
+      background: #080908;
+      border: 1px solid #3f423d;
+      border-left: 6px solid #ff173c;
+      border-right: 6px solid #ff173c;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+    }
+    #casio-interval-stopwatch .sequence .active {
+      color: #080104;
+      background: #ff173c;
+      border-bottom-color: #080104;
+      box-shadow: 0 0 13px rgb(255 23 60 / 65%);
+    }
+    #casio-interval-stopwatch .sound-row,
+    #casio-interval-stopwatch .customizer {
+      padding: 8px 10px;
+      color: #f0f0e8;
+      background: rgb(8 9 8 / 70%);
+      border-left: 4px solid #ff173c;
+    }
+    #casio-interval-stopwatch .customizer summary,
+    #casio-interval-stopwatch .sound-row {
+      color: #f0f0e8;
+    }
+    #casio-interval-stopwatch .controls {
+      padding: 6px;
+      background: #080908;
+      border-bottom: 4px solid #ff173c;
+      box-shadow: 0 5px 14px rgb(0 0 0 / 38%);
+    }
+    #casio-interval-stopwatch .controls .btn-primary {
+      color: #080104;
+      background: #ff173c;
+      border-color: #ff5973;
+    }
+  </style>
+
+  <div class="watch-shell">
+    <div class="brand-row" aria-hidden="true">
+      <span class="brand">BKG TIME SYSTEM · 1985</span>
+      <span class="model">RED LCD // 8-BIT TRAINING MODE</span>
+    </div>
+
+    <div class="lcd" role="timer" aria-live="polite" aria-atomic="true">
+      <div class="lcd-top">
+        <span class="mode" id="ci-mode">READY</span>
+        <span class="phase-count" id="ci-phase-count">1 / 9</span>
+      </div>
+      <div class="time" id="ci-time">15</div>
+      <div class="unit" id="ci-unit">SECONDS</div>
+    </div>
+
+    <div class="sequence" id="ci-sequence" aria-label="Workout sequence">
+      <span class="active">READY 15</span><span>5</span><span>REST 15</span><span>10</span><span>REST 15</span><span>15</span><span>REST 15</span><span>30</span><span>REST 15</span>
+    </div>
+
+    <div class="sound-row">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="ci-sound" checked>
+        <label class="form-check-label" for="ci-sound">SOUND ON</label>
+      </div>
+    </div>
+    <div class="controls">
+      <button type="button" class="btn btn-primary btn-block" id="ci-start">START</button>
+      <button type="button" class="btn btn-block" id="ci-reset">RESET</button>
+    </div>
+
+    <details class="customizer" id="ci-customizer">
+      <summary>CUSTOMIZE INTERVALS</summary>
+      <div class="phase-editor" id="ci-phase-editor"></div>
+      <div class="editor-actions">
+        <button type="button" class="btn" id="ci-add">ADD INTERVAL</button>
+        <button type="button" class="btn btn-primary" id="ci-apply">APPLY &amp; RESET</button>
+      </div>
+    </details>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById("casio-interval-stopwatch");
+      const timeEl = root.querySelector("#ci-time");
+      const modeEl = root.querySelector("#ci-mode");
+      const phaseEl = root.querySelector("#ci-phase-count");
+      const startBtn = root.querySelector("#ci-start");
+      const resetBtn = root.querySelector("#ci-reset");
+      const soundToggle = root.querySelector("#ci-sound");
+      const soundLabel = root.querySelector('label[for="ci-sound"]');
+      const sequenceEl = root.querySelector("#ci-sequence");
+      const editorEl = root.querySelector("#ci-phase-editor");
+      const addBtn = root.querySelector("#ci-add");
+      const applyBtn = root.querySelector("#ci-apply");
+      let markers = [];
+      let phases = [
+        { type: "GET READY", seconds: 15, direction: "down" },
+        { type: "GO", seconds: 5, direction: "up" },
+        { type: "REST", seconds: 15, direction: "down" },
+        { type: "GO", seconds: 10, direction: "up" },
+        { type: "REST", seconds: 15, direction: "down" },
+        { type: "GO", seconds: 15, direction: "up" },
+        { type: "REST", seconds: 15, direction: "down" },
+        { type: "GO", seconds: 30, direction: "up" },
+        { type: "REST", seconds: 15, direction: "down" }
+      ];
+      let editorDraft = phases.map((phase) => ({ ...phase }));
+      let index = 0;
+      let running = false;
+      let finished = false;
+      let elapsedBeforeStart = 0;
+      let startedAt = 0;
+      let animationId = 0;
+      let audioContext = null;
+      let lastMusicStep = -1;
+      let lastBeepSlot = -1;
+
+      // Original NES-era training loop. Frequencies are synthesized locally;
+      // no recording, MIDI file, or copyrighted melody is embedded.
+      const trainingLead = [
+        329.63, 392.00, 493.88, 392.00,
+        440.00, 523.25, 659.25, 523.25,
+        392.00, 493.88, 587.33, 493.88,
+        349.23, 440.00, 523.25, 659.25
+      ];
+      const trainingBass = [82.41, 110.00, 98.00, 87.31];
+
+      function soundEnabled() {
+        return soundToggle.checked;
+      }
+
+      function prepareAudio() {
+        if (!soundEnabled()) return;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!audioContext && AudioContextClass) audioContext = new AudioContextClass();
+        if (audioContext && audioContext.state === "suspended") audioContext.resume();
+      }
+
+      function beep(frequency = 880, duration = 0.07, volume = 0.1) {
+        if (!soundEnabled() || !audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const now = audioContext.currentTime;
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(frequency, now);
+        gain.gain.setValueAtTime(volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + duration);
+      }
+
+      function chipTone(frequency, duration, volume, type = "square", delay = 0) {
+        if (!soundEnabled() || !audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const start = audioContext.currentTime + delay;
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.001, start);
+        gain.gain.linearRampToValueAtTime(volume, start + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.02);
+      }
+
+      function playTrainingStep(step) {
+        const lead = trainingLead[step % trainingLead.length];
+        chipTone(lead, 0.15, 0.055, "square");
+        if (step % 2 === 0) {
+          const bass = trainingBass[Math.floor(step / 4) % trainingBass.length];
+          chipTone(bass, 0.28, 0.07, "triangle");
+          chipTone(bass * 2, 0.055, 0.022, "square", 0.075);
+        }
+        if (step % 4 === 3) chipTone(1318.51, 0.035, 0.018, "square");
+      }
+
+      function resetAudioTracking() {
+        lastMusicStep = -1;
+        lastBeepSlot = -1;
+      }
+
+      function playPhaseAudio(elapsedMs) {
+        if (!running || !soundEnabled()) return;
+        const phase = phases[index];
+        if (phase.direction === "up") {
+          const musicStep = Math.floor(elapsedMs / 200);
+          if (musicStep !== lastMusicStep) {
+            lastMusicStep = musicStep;
+            playTrainingStep(musicStep);
+          }
+          return;
+        }
+        const remainingMs = Math.max(0, phase.seconds * 1000 - elapsedMs);
+        const remainingSeconds = remainingMs / 1000;
+        const intervalMs = remainingSeconds <= 2 ? 250 : (remainingSeconds <= 5 ? 500 : 1000);
+        const slot = Math.floor(elapsedMs / intervalMs);
+        if (slot !== lastBeepSlot) {
+          lastBeepSlot = slot;
+          const frequency = remainingSeconds <= 2 ? 1320 : (remainingSeconds <= 5 ? 1050 : 760);
+          beep(frequency, remainingSeconds <= 2 ? 0.045 : 0.07, 0.09);
+        }
+      }
+
+      function phaseKind(phase) {
+        if (phase.type === "GET READY") return "ready";
+        return phase.direction === "up" ? "up" : "rest";
+      }
+
+      function phaseFromKind(kind, seconds) {
+        if (kind === "ready") return { type: "GET READY", seconds, direction: "down" };
+        if (kind === "rest") return { type: "REST", seconds, direction: "down" };
+        return { type: "GO", seconds, direction: "up" };
+      }
+
+      function sequenceLabel(phase) {
+        if (phase.type === "GET READY") return "READY " + phase.seconds;
+        if (phase.direction === "down") return "REST " + phase.seconds;
+        return String(phase.seconds);
+      }
+
+      function renderSequence() {
+        sequenceEl.replaceChildren();
+        phases.forEach((phase) => {
+          const marker = document.createElement("span");
+          marker.textContent = sequenceLabel(phase);
+          sequenceEl.appendChild(marker);
+        });
+        markers = Array.from(sequenceEl.children);
+      }
+
+      function renderEditor() {
+        editorEl.replaceChildren();
+        editorDraft.forEach((phase, rowIndex) => {
+          const row = document.createElement("div");
+          row.className = "phase-row";
+          row.dataset.index = String(rowIndex);
+          const kind = phaseKind(phase);
+          row.innerHTML =
+            '<label class="form-label">Mode<select class="form-select ci-kind">' +
+            '<option value="up"' + (kind === "up" ? " selected" : "") + '>Count up</option>' +
+            '<option value="rest"' + (kind === "rest" ? " selected" : "") + '>Rest countdown</option>' +
+            '<option value="ready"' + (kind === "ready" ? " selected" : "") + '>Ready countdown</option>' +
+            '</select></label>' +
+            '<label class="form-label">Seconds<input class="form-control ci-seconds" type="number" min="1" max="999" step="1" value="' + phase.seconds + '"></label>' +
+            '<button type="button" class="btn btn-ghost ci-remove" aria-label="Remove interval ' + (rowIndex + 1) + '">REMOVE</button>';
+          editorEl.appendChild(row);
+        });
+      }
+
+      function readEditor() {
+        return Array.from(editorEl.querySelectorAll(".phase-row")).map((row) => {
+          const kind = row.querySelector(".ci-kind").value;
+          const seconds = Math.max(1, Math.min(999, Math.round(Number(row.querySelector(".ci-seconds").value) || 1)));
+          return phaseFromKind(kind, seconds);
+        });
+      }
+
+      function shownSeconds(elapsedMs) {
+        const phase = phases[index];
+        if (phase.direction === "up") return Math.min(phase.seconds, Math.floor(elapsedMs / 1000) + 1);
+        return Math.max(0, phase.seconds - Math.floor(elapsedMs / 1000));
+      }
+
+      function render(elapsedMs = elapsedBeforeStart) {
+        const phase = phases[index];
+        timeEl.textContent = String(shownSeconds(elapsedMs)).padStart(2, "0");
+        modeEl.textContent = finished ? "DONE" : (!running && elapsedMs === 0 ? "READY · " + phase.type : phase.type);
+        phaseEl.textContent = finished ? "COMPLETE" : (index + 1) + " / " + phases.length;
+        markers.forEach((marker, markerIndex) => marker.classList.toggle("active", markerIndex === index && !finished));
+        startBtn.textContent = finished ? "START AGAIN" : (running ? "PAUSE" : (elapsedMs > 0 ? "RESUME" : "START"));
+        playPhaseAudio(elapsedMs);
+      }
+
+      function advance() {
+        elapsedBeforeStart = 0;
+        index += 1;
+        resetAudioTracking();
+        if (index >= phases.length) {
+          index = phases.length - 1;
+          running = false;
+          finished = true;
+          cancelAnimationFrame(animationId);
+          render(phases[index].seconds * 1000);
+          beep(1560, 0.18, 0.12);
+          return false;
+        }
+        startedAt = performance.now();
+        render(0);
+        return true;
+      }
+
+      function tick(now) {
+        if (!running) return;
+        const elapsed = elapsedBeforeStart + now - startedAt;
+        const duration = phases[index].seconds * 1000;
+        if (elapsed >= duration) {
+          if (!advance()) return;
+        } else {
+          render(elapsed);
+        }
+        animationId = requestAnimationFrame(tick);
+      }
+
+      function reset() {
+        running = false;
+        finished = false;
+        index = 0;
+        elapsedBeforeStart = 0;
+        cancelAnimationFrame(animationId);
+        resetAudioTracking();
+        render(0);
+      }
+
+      startBtn.addEventListener("click", () => {
+        if (finished) reset();
+        if (running) {
+          elapsedBeforeStart += performance.now() - startedAt;
+          running = false;
+          cancelAnimationFrame(animationId);
+          render(elapsedBeforeStart);
+          return;
+        }
+        prepareAudio();
+        running = true;
+        startedAt = performance.now();
+        render(elapsedBeforeStart);
+        animationId = requestAnimationFrame(tick);
+      });
+
+      resetBtn.addEventListener("click", reset);
+      soundToggle.addEventListener("change", () => {
+        soundLabel.textContent = soundEnabled() ? "SOUND ON" : "MUTED";
+        if (soundEnabled()) {
+          prepareAudio();
+          resetAudioTracking();
+        }
+      });
+      editorEl.addEventListener("click", (event) => {
+        const removeButton = event.target.closest(".ci-remove");
+        if (!removeButton) return;
+        editorDraft = readEditor();
+        const row = removeButton.closest(".phase-row");
+        editorDraft.splice(Number(row.dataset.index), 1);
+        if (editorDraft.length === 0) editorDraft.push({ type: "GO", seconds: 5, direction: "up" });
+        renderEditor();
+      });
+      addBtn.addEventListener("click", () => {
+        editorDraft = readEditor();
+        editorDraft.push({ type: "GO", seconds: 5, direction: "up" });
+        renderEditor();
+      });
+      applyBtn.addEventListener("click", () => {
+        editorDraft = readEditor();
+        phases = editorDraft.map((phase) => ({ ...phase }));
+        renderSequence();
+        reset();
+      });
+      renderSequence();
+      renderEditor();
+      render(0);
+    })();
+  </script>
+</div>
+
+</body>
+</html>
